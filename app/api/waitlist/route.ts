@@ -62,5 +62,5 @@ export async function POST(request: Request) {
 
   // A duplicate is reported as success so the endpoint can't be used to probe
   // which addresses are already on the list.
-  return Response.json({ message: "You're on the list. We'll be in touch." });
+  return Response.json({ message: "Your spot on the private waitlist is secured." });
 }
