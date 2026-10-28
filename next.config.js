@@ -15,6 +15,12 @@ const nextConfig = {
   },
 };
 
-// Cloudflare Pages: `npm run pages:build` runs a standard `next build`. Routes use
-// the default runtime; no `runtime = "edge"` exports are needed or used.
+// Cloudflare: `npm run deploy` wraps `next build` with the OpenNext adapter (Workers
+// runtime). Routes use the default runtime; no `runtime = "edge"` exports are used.
 module.exports = nextConfig;
+
+// Expose Cloudflare bindings to `next dev` only. Starting the local workerd runtime
+// during `next build` fails and is unnecessary there.
+if (process.env.NODE_ENV === "development") {
+  import("@opennextjs/cloudflare").then((m) => m.initOpenNextCloudflareForDev());
+}

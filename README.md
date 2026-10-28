@@ -15,7 +15,7 @@ and broker affiliate referrals.
 | Framework | Next.js (App Router), TypeScript |
 | Styling | Tailwind CSS v4, custom luxury tokens in `app/globals.css` |
 | Typography | Inter (body), Cormorant Garamond, tracked-out (headings) |
-| Hosting | Cloudflare Pages, standard `next build` |
+| Hosting | Cloudflare Workers via OpenNext adapter |
 
 Theme tokens: background `#0B0B0C`, panels `#1A1A1E`, gold accent `#D4AF37`.
 
@@ -116,12 +116,27 @@ npm run lint
 npm run pages:build
 ```
 
-## Deploy to Cloudflare Pages
+## Deploy to Cloudflare (OpenNext)
 
-`npm run pages:build` is a standard `next build`. Because the app uses API routes,
-deploy with Cloudflare's Next.js support (the OpenNext Cloudflare adapter or the
-Pages Next.js preset) rather than static export. Confirm the preset in your
-Cloudflare dashboard before the first deploy.
+The app deploys to **Cloudflare Workers** through the OpenNext adapter
+(`@opennextjs/cloudflare`); configuration is committed, so nothing needs to be
+generated on the build server.
+
+| File | Purpose |
+| --- | --- |
+| `wrangler.jsonc` | Worker name, assets directory, `nodejs_compat` |
+| `open-next.config.ts` | Adapter config (default cache; no R2 bucket needed) |
+| `public/_headers` | Long-lived caching for `/_next/static/*` |
+
+Scripts: `npm run preview` (local Workers preview), `npm run deploy`,
+`npm run upload`. `npm run build` / `pages:build` remain a plain `next build`; the
+adapter calls `npm run build` itself, so do not point `build` at the adapter.
+
+In Cloudflare's Git integration set the build command to
+`npx opennextjs-cloudflare build` and the deploy command to
+`npx opennextjs-cloudflare deploy` (or `npx wrangler deploy`). Cloudflare's
+adapter is only partly supported on native Windows; use WSL or the Cloudflare
+build server for production builds.
 
 ## Environment variables
 
