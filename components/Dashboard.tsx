@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import type { Plan, PublicInsight } from "@/lib/insights";
 import { InsightCard } from "./InsightCard";
@@ -119,6 +120,12 @@ export function Dashboard() {
             ))}
             {showLock && <LockOverlay onUnlockDemo={() => setDemoPlan("premium")} />}
           </div>
+          <footer className="border-t border-gold/15 pt-6 text-center text-xs text-muted">
+            © {new Date().getFullYear()} AlphaMint AI ·{" "}
+            <Link href="/privacy" className="hover:text-gold">
+              Privacy Policy
+            </Link>
+          </footer>
         </div>
       </main>
     </div>

@@ -1,11 +1,13 @@
 "use client";
 
+import Link from "next/link";
 import { useState, type FormEvent } from "react";
 
 type Status = "idle" | "loading" | "success" | "error";
 
 export function LockOverlay({ onUnlockDemo }: { onUnlockDemo: () => void }) {
   const [email, setEmail] = useState("");
+  const [agreed, setAgreed] = useState(false);
   const [status, setStatus] = useState<Status>("idle");
   const [message, setMessage] = useState("");
 
@@ -69,9 +71,29 @@ export function LockOverlay({ onUnlockDemo }: { onUnlockDemo: () => void }) {
               onChange={(e) => setEmail(e.target.value)}
               className="w-full rounded-lg border border-gold/30 bg-background/60 px-4 py-3 text-sm text-foreground placeholder:text-muted focus:border-gold focus:outline-none focus:ring-1 focus:ring-gold"
             />
+            <label className="flex items-start gap-2 text-left text-xs text-muted">
+              <input
+                type="checkbox"
+                required
+                checked={agreed}
+                onChange={(e) => setAgreed(e.target.checked)}
+                className="mt-0.5 accent-[#d4af37]"
+              />
+              <span>
+                By joining, you agree to our{" "}
+                <Link
+                  href="/privacy"
+                  target="_blank"
+                  className="text-gold underline-offset-4 hover:underline"
+                >
+                  Privacy Policy
+                </Link>
+                .
+              </span>
+            </label>
             <button
               type="submit"
-              disabled={status === "loading"}
+              disabled={status === "loading" || !agreed}
               className="w-full rounded-lg bg-gradient-to-b from-gold to-gold-soft px-5 py-3 text-sm font-semibold uppercase tracking-[0.18em] text-background transition hover:brightness-110 disabled:opacity-60"
             >
               {status === "loading" ? "Joining…" : "Join Private Waitlist"}

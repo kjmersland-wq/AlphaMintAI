@@ -24,7 +24,9 @@ app/
   layout.tsx           fonts, metadata, dark root
   page.tsx             renders <Dashboard />
   api/insights/        session-aware insights; strips premium fields for Free
-  api/waitlist/        validates and logs (masked) waitlist emails
+  api/waitlist/        validates and stores waitlist emails (Supabase)
+  privacy/             Privacy Policy page
+supabase/schema.sql    waitlist table definition
 components/
   Dashboard.tsx        sticky sidebar, feed; fetches /api/insights
   InsightCard.tsx      AI Market Insight Card + affiliate CTA
@@ -50,10 +52,24 @@ with a real session/subscription lookup before launch.
 
 ## Waitlist
 
-`POST /api/waitlist` validates the email and logs a masked form
-(`j***@example.com`). Nothing is persisted yet. Connect it to your audience store
-(Cloudflare D1/KV or an email provider) before collecting real signups, and add a
-privacy notice and rate limiting.
+`POST /api/waitlist` validates the email and inserts it into the `waitlist` table
+(`id`, `email`, `created_at`; see `supabase/schema.sql`) through Supabase's REST API.
+
+1. Create a Supabase project and run `supabase/schema.sql` in the SQL editor.
+2. Set `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` as server-side environment
+   variables (never `NEXT_PUBLIC_`). RLS is enabled with no policies, so only the
+   service role can read or write.
+3. Without these variables the route logs a masked address and does not persist it.
+
+Duplicate emails are accepted silently (unique constraint), so the endpoint does not
+reveal who is already on the list. Add rate limiting before a public launch.
+
+## Privacy and GDPR
+
+`/privacy` holds the Privacy Policy (Personvernerklæring). The waitlist form requires
+consent via a checkbox linking to it. Set `NEXT_PUBLIC_PRIVACY_EMAIL` to the address
+that handles access and deletion requests. Have counsel review the policy text and
+name the legal controller entity once it is established.
 
 ## Monetization (planned)
 
@@ -86,3 +102,6 @@ Cloudflare dashboard before the first deploy.
 | Name | Purpose |
 | --- | --- |
 | `NEXT_PUBLIC_BROKER_AFFILIATE_URL` | Partner broker tracked link |
+| `SUPABASE_URL` | Supabase project URL (server only) |
+| `SUPABASE_SERVICE_ROLE_KEY` | Supabase service role key (server only) |
+| `NEXT_PUBLIC_PRIVACY_EMAIL` | Contact for privacy requests |
