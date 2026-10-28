@@ -128,15 +128,19 @@ generated on the build server.
 | `open-next.config.ts` | Adapter config (default cache; no R2 bucket needed) |
 | `public/_headers` | Long-lived caching for `/_next/static/*` |
 
+Live worker: https://alphamintai.kjmersland.workers.dev (worker name `alphamintai`).
+
 Scripts: `npm run preview` (local Workers preview), `npm run deploy`,
 `npm run upload`. `npm run build` / `pages:build` remain a plain `next build`; the
 adapter calls `npm run build` itself, so do not point `build` at the adapter.
 
 In Cloudflare's Git integration set the build command to
 `npx opennextjs-cloudflare build` and the deploy command to
-`npx opennextjs-cloudflare deploy` (or `npx wrangler deploy`). Cloudflare's
-adapter is only partly supported on native Windows; use WSL or the Cloudflare
-build server for production builds.
+`npx opennextjs-cloudflare deploy` (or `npx wrangler deploy`). The adapter is only
+partly supported on native Windows: `opennextjs-cloudflare deploy` fails there at
+its cache-population step (workerd SQLite). Build with `npx opennextjs-cloudflare build`,
+then upload with `npx wrangler deploy --no-autoconfig` (safe because no R2/ISR cache
+is used), or use WSL / Cloudflare's build server.
 
 ## Environment variables
 

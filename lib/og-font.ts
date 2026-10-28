@@ -1,12 +1,10 @@
-import { readFile } from "node:fs/promises";
-import { join } from "node:path";
+import { CORMORANT_BOLD_BASE64 } from "./og-font-data";
 
-// Cormorant Garamond Bold, bundled in the repo so image generation never depends
-// on a network fetch to Google Fonts. The icon and OG routes are prerendered at
-// build time, so this file read happens during `next build`, not per request.
+// Cormorant Garamond Bold, inlined as base64 so image generation works without
+// filesystem or network access (Cloudflare Workers has neither at request time).
 export async function loadSerifFont(): Promise<ArrayBuffer> {
-  const file = await readFile(join(process.cwd(), "assets/fonts/CormorantGaramond-Bold.woff"));
-  return file.buffer.slice(file.byteOffset, file.byteOffset + file.byteLength) as ArrayBuffer;
+  const bytes = Uint8Array.from(atob(CORMORANT_BOLD_BASE64), (c) => c.charCodeAt(0));
+  return bytes.buffer;
 }
 
 export const BRAND = {
