@@ -14,7 +14,7 @@ const cormorant = Cormorant_Garamond({
 });
 
 export const metadata: Metadata = {
-  title: "Aureum — AI Investment Intelligence",
+  title: "AlphaMint AI — AI Investment Intelligence",
   description:
     "Exclusive AI-driven market insights for members. Educational content only; not financial advice.",
 };

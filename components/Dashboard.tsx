@@ -1,11 +1,9 @@
 "use client";
 
-import { useState } from "react";
-import { insights } from "@/lib/insights";
+import { useCallback, useEffect, useState } from "react";
+import type { Plan, PublicInsight } from "@/lib/insights";
 import { InsightCard } from "./InsightCard";
 import { LockOverlay } from "./LockOverlay";
-
-type Plan = "free" | "premium";
 
 const navItems = [
   { label: "Opportunities", active: true },
@@ -15,18 +13,49 @@ const navItems = [
   { label: "Account", active: false },
 ];
 
-export function Dashboard() {
-  // In production, derive this from the authenticated user's Stripe subscription.
-  const [plan, setPlan] = useState<Plan>("free");
-  const isPremium = plan === "premium";
+interface InsightsResponse {
+  plan: Plan;
+  insights: PublicInsight[];
+}
 
-  const [teaser, ...gated] = insights;
+export function Dashboard() {
+  const [data, setData] = useState<InsightsResponse | null>(null);
+  const [failed, setFailed] = useState(false);
+
+  const load = useCallback(async () => {
+    try {
+      const res = await fetch("/api/insights", { cache: "no-store" });
+      if (!res.ok) throw new Error(String(res.status));
+      setData((await res.json()) as InsightsResponse);
+      setFailed(false);
+    } catch {
+      setFailed(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- initial data fetch
+    void load();
+  }, [load]);
+
+  // Demo only: the mock session is a cookie the API reads. The server decides
+  // what data to return; this just changes which session the API sees.
+  async function setDemoPlan(plan: Plan) {
+    document.cookie = `alphamint_plan=${plan}; path=/; SameSite=Lax`;
+    await load();
+  }
+
+  const isPremium = data?.plan === "premium";
+  const showLock = data !== null && !isPremium;
+  const [teaser, ...gated] = data?.insights ?? [];
 
   return (
     <div className="flex min-h-screen">
       <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col border-r border-gold/15 bg-panel px-6 py-8 md:flex">
         <div>
-          <p className="font-heading text-3xl font-semibold text-gold">AUREUM</p>
+          <p className="font-heading whitespace-nowrap text-xl font-semibold text-gold">
+            ALPHAMINT AI
+          </p>
           <p className="mt-1 text-[10px] uppercase tracking-[0.3em] text-muted">
             AI Investment Intelligence
           </p>
@@ -50,15 +79,17 @@ export function Dashboard() {
         <div className="mt-auto rounded-xl border border-gold/20 p-4">
           <p className="text-[10px] uppercase tracking-[0.25em] text-muted">Membership</p>
           <p className="font-heading mt-1 text-xl text-gold">
-            {isPremium ? "Premium" : "Free"}
+            {data ? (isPremium ? "Premium" : "Free") : "…"}
           </p>
-          <button
-            type="button"
-            onClick={() => setPlan(isPremium ? "free" : "premium")}
-            className="mt-3 text-xs text-muted underline-offset-4 hover:text-gold hover:underline"
-          >
-            Switch to {isPremium ? "Free" : "Premium"} (demo)
-          </button>
+          {data && (
+            <button
+              type="button"
+              onClick={() => setDemoPlan(isPremium ? "free" : "premium")}
+              className="mt-3 text-xs text-muted underline-offset-4 hover:text-gold hover:underline"
+            >
+              Switch to {isPremium ? "Free" : "Premium"} (demo)
+            </button>
+          )}
         </div>
       </aside>
 
@@ -71,13 +102,22 @@ export function Dashboard() {
         </header>
 
         <div className="mx-auto flex max-w-3xl flex-col gap-6">
-          <InsightCard insight={teaser} />
-
+          {failed && (
+            <p role="alert" className="text-sm text-rose-300">
+              Unable to load insights. Please refresh.
+            </p>
+          )}
+          {!data && !failed && (
+            <p role="status" className="text-sm text-muted">
+              Loading insights…
+            </p>
+          )}
+          {teaser && <InsightCard insight={teaser} />}
           <div className="relative flex flex-col gap-6">
             {gated.map((insight) => (
-              <InsightCard key={insight.id} insight={insight} locked={!isPremium} />
+              <InsightCard key={insight.id} insight={insight} />
             ))}
-            {!isPremium && <LockOverlay onUnlockDemo={() => setPlan("premium")} />}
+            {showLock && <LockOverlay onUnlockDemo={() => setDemoPlan("premium")} />}
           </div>
         </div>
       </main>

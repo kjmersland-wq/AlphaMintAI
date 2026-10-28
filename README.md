@@ -1,8 +1,9 @@
-# Project Aureum
+# AlphaMint AI
 
-An exclusive, dark-mode AI investment intelligence dashboard. Free members see a
-teaser; Premium members ($99/mo) unlock full AI analysis. Revenue comes from
-subscriptions and broker affiliate referrals.
+An exclusive, dark-mode AI investment intelligence dashboard. Free visitors see a
+teaser and can join a private waitlist; Premium members will unlock full AI
+analysis at launch pricing of $99/mo (coming soon). Planned revenue: subscriptions
+and broker affiliate referrals.
 
 > **Educational use only.** All AI insights are for educational purposes and general
 > market information. They are not financial advice.
@@ -14,51 +15,55 @@ subscriptions and broker affiliate referrals.
 | Framework | Next.js (App Router), TypeScript |
 | Styling | Tailwind CSS v4, custom luxury tokens in `app/globals.css` |
 | Typography | Inter (body), Cormorant Garamond, tracked-out (headings) |
-| Hosting | Cloudflare Pages via `@cloudflare/next-on-pages` |
+| Hosting | Cloudflare Pages, standard `next build` |
 
 Theme tokens: background `#0B0B0C`, panels `#1A1A1E`, gold accent `#D4AF37`.
 
 ```
 app/
-  layout.tsx          fonts, metadata, dark root
-  page.tsx            renders <Dashboard />
-  api/checkout/       edge route: Stripe Checkout session hook (stub)
+  layout.tsx           fonts, metadata, dark root
+  page.tsx             renders <Dashboard />
+  api/insights/        session-aware insights; strips premium fields for Free
+  api/waitlist/        validates and logs (masked) waitlist emails
 components/
-  Dashboard.tsx       sticky sidebar, feed, Free/Premium plan state
-  InsightCard.tsx     AI Market Insight Card + affiliate CTA
-  LockOverlay.tsx     glassmorphism paywall ($99/mo) + checkout call
-  Disclaimer.tsx      legal disclaimer shown under every CTA
-lib/insights.ts       typed sample data (replace with live pipeline)
+  Dashboard.tsx        sticky sidebar, feed; fetches /api/insights
+  InsightCard.tsx      AI Market Insight Card + affiliate CTA
+  LockOverlay.tsx      glassmorphism lock screen with waitlist form
+  Disclaimer.tsx       legal disclaimer shown under every CTA
+lib/insights.ts        data + getInsightsForPlan() server-side filter
 ```
 
-## Premium vs Free
+## Secure data layer
 
-`Dashboard` holds a `plan` state (`free` | `premium`). For Free users the first
-insight is fully visible as a teaser; the AI confidence score, Bull/Bear case and
-broker CTA on all other cards are blurred, and a `backdrop-blur-md` lock screen
-presents the single membership tier.
+`GET /api/insights` reads the session and returns one of two shapes:
 
-**Before launch:** the blur is presentational. Locked content is still in the page
-HTML, so production must fetch premium analysis from an authenticated API only
-after verifying an active subscription, never ship it to Free clients.
+- **Premium:** full records, including `confidence`, `bull`, `bear` and `affiliateUrl`.
+- **Free:** locked records contain only `id`, `asset`, `ticker`, `sentiment` and
+  `locked: true`. The premium fields are absent from the JSON, so they never reach
+  the browser or the HTML. The blurred UI is a decorative placeholder.
 
-## AI tech stack
+The first insight is a free teaser and is returned in full.
 
-Insights are currently static sample data typed in `lib/insights.ts`. The intended
-pipeline: market data ingestion, an LLM (for example through the Vercel AI Gateway
-or the Anthropic API) producing structured output matching the `Insight` type
-(sentiment, 0-100 confidence, bull/bear points), cached and served to members.
+**Mock session:** the plan comes from an unsigned `alphamint_plan` cookie so the demo
+toggle works. This is forgeable. Replace `getPlan()` in `app/api/insights/route.ts`
+with a real session/subscription lookup before launch.
 
-## Monetization
+## Waitlist
 
-1. **Subscription**: one $99/month tier through Stripe Checkout.
-   `POST /api/checkout` is a stub; set `STRIPE_SECRET_KEY` and `STRIPE_PRICE_ID`
-   and implement session creation, then add a webhook to sync subscription status.
-2. **Affiliate**: the "Invest via Partner Broker" button uses
+`POST /api/waitlist` validates the email and logs a masked form
+(`j***@example.com`). Nothing is persisted yet. Connect it to your audience store
+(Cloudflare D1/KV or an email provider) before collecting real signups, and add a
+privacy notice and rate limiting.
+
+## Monetization (planned)
+
+1. **Subscription:** one $99/month tier. Payments are deferred; a checkout flow will
+   be added after the business setup is complete.
+2. **Affiliate:** the "Invest via Partner Broker" button uses
    `NEXT_PUBLIC_BROKER_AFFILIATE_URL` with `rel="sponsored"`. Disclose affiliate
-   relationships per your jurisdiction's rules.
-3. **Compliance**: every CTA is followed by a disclaimer. Have counsel review the
-   wording and regulatory posture (e.g. SEC/FCA rules on investment content) before launch.
+   relationships as your jurisdiction requires.
+3. **Compliance:** every CTA is followed by a disclaimer. Have counsel review the
+   wording and regulatory posture before launch.
 
 ## Development
 
@@ -66,24 +71,18 @@ or the Anthropic API) producing structured output matching the `Insight` type
 npm install
 npm run dev        # http://localhost:3000
 npm run lint
-npm run build
+npm run pages:build
 ```
 
 ## Deploy to Cloudflare Pages
 
-```bash
-npm run pages:build   # runs @cloudflare/next-on-pages
-```
-
-Set the build command to `npx @cloudflare/next-on-pages` and the output directory to
-`.vercel/output/static`, with the `nodejs_compat` compatibility flag enabled. Routes
-that run dynamically must export `runtime = "edge"` (see `app/api/checkout`).
-Next.js reports the Edge runtime as deprecated; it is kept deliberately for this target.
+`npm run pages:build` is a standard `next build`. Because the app uses API routes,
+deploy with Cloudflare's Next.js support (the OpenNext Cloudflare adapter or the
+Pages Next.js preset) rather than static export. Confirm the preset in your
+Cloudflare dashboard before the first deploy.
 
 ## Environment variables
 
 | Name | Purpose |
 | --- | --- |
 | `NEXT_PUBLIC_BROKER_AFFILIATE_URL` | Partner broker tracked link |
-| `STRIPE_SECRET_KEY` | Stripe API key (server only) |
-| `STRIPE_PRICE_ID` | Price ID of the $99/mo plan |

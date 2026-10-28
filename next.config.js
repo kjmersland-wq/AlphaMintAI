@@ -15,6 +15,6 @@ const nextConfig = {
   },
 };
 
-// Cloudflare Pages: build with `npm run pages:build` (@cloudflare/next-on-pages).
-// Dynamic routes opt in with `export const runtime = "edge"`.
+// Cloudflare Pages: `npm run pages:build` runs a standard `next build`. Routes use
+// the default runtime; no `runtime = "edge"` exports are needed or used.
 module.exports = nextConfig;

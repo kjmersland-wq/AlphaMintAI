@@ -1,28 +1,29 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type FormEvent } from "react";
 
-export const MONTHLY_PRICE = 99;
+type Status = "idle" | "loading" | "success" | "error";
 
 export function LockOverlay({ onUnlockDemo }: { onUnlockDemo: () => void }) {
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [email, setEmail] = useState("");
+  const [status, setStatus] = useState<Status>("idle");
+  const [message, setMessage] = useState("");
 
-  async function startCheckout() {
-    setLoading(true);
-    setError(null);
+  async function joinWaitlist(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setStatus("loading");
     try {
-      const res = await fetch("/api/checkout", { method: "POST" });
-      const data: { url?: string; message?: string } = await res.json();
-      if (res.ok && data.url) {
-        window.location.assign(data.url);
-        return;
-      }
-      setError(data.message ?? "Checkout is not configured yet.");
+      const res = await fetch("/api/waitlist", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      const data: { message?: string } = await res.json();
+      setStatus(res.ok ? "success" : "error");
+      setMessage(data.message ?? (res.ok ? "You're on the list." : "Something went wrong."));
     } catch {
-      setError("Unable to reach checkout. Please try again.");
-    } finally {
-      setLoading(false);
+      setStatus("error");
+      setMessage("Unable to reach the server. Please try again.");
     }
   }
 
@@ -32,31 +33,57 @@ export function LockOverlay({ onUnlockDemo }: { onUnlockDemo: () => void }) {
         <p className="text-[11px] uppercase tracking-[0.3em] text-gold-soft">
           Members Only
         </p>
-        <h2 className="font-heading mt-2 text-3xl font-semibold">Aureum Private</h2>
+        <h2 className="font-heading mt-2 text-3xl font-semibold">AlphaMint AI Private</h2>
         <p className="mt-3 text-sm text-foreground/75">
-          Unlock full AI confidence scores, bull &amp; bear analysis, and every new
+          Full AI confidence scores, bull &amp; bear analysis, and every new
           opportunity as it is published.
         </p>
 
         <p className="mt-6">
-          <span className="font-heading text-5xl text-gold">${MONTHLY_PRICE}</span>
-          <span className="text-sm text-muted"> / month</span>
+          <span className="text-[11px] uppercase tracking-[0.25em] text-muted">
+            Launch Pricing
+          </span>
+          <span className="mt-1 block">
+            <span className="font-heading text-5xl text-gold">$99</span>
+            <span className="text-sm text-muted">/mo</span>
+          </span>
+          <span className="mt-1 block text-xs text-gold-soft">(Coming Soon)</span>
         </p>
-        <p className="mt-1 text-xs text-muted">Single membership tier. Cancel anytime.</p>
 
-        <button
-          type="button"
-          onClick={startCheckout}
-          disabled={loading}
-          className="mt-6 w-full rounded-lg bg-gradient-to-b from-gold to-gold-soft px-5 py-3 text-sm font-semibold uppercase tracking-[0.18em] text-background transition hover:brightness-110 disabled:opacity-60"
-        >
-          {loading ? "Redirecting…" : "Become a Member"}
-        </button>
-        {error && (
-          <p role="alert" className="mt-3 text-xs text-rose-300">
-            {error}
+        {status === "success" ? (
+          <p role="status" className="mt-6 text-sm text-emerald-300">
+            {message}
           </p>
+        ) : (
+          <form onSubmit={joinWaitlist} className="mt-6 flex flex-col gap-3" noValidate>
+            <label htmlFor="waitlist-email" className="sr-only">
+              Email address
+            </label>
+            <input
+              id="waitlist-email"
+              type="email"
+              required
+              autoComplete="email"
+              placeholder="you@example.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full rounded-lg border border-gold/30 bg-background/60 px-4 py-3 text-sm text-foreground placeholder:text-muted focus:border-gold focus:outline-none focus:ring-1 focus:ring-gold"
+            />
+            <button
+              type="submit"
+              disabled={status === "loading"}
+              className="w-full rounded-lg bg-gradient-to-b from-gold to-gold-soft px-5 py-3 text-sm font-semibold uppercase tracking-[0.18em] text-background transition hover:brightness-110 disabled:opacity-60"
+            >
+              {status === "loading" ? "Joining…" : "Join Private Waitlist"}
+            </button>
+            {status === "error" && (
+              <p role="alert" className="text-xs text-rose-300">
+                {message}
+              </p>
+            )}
+          </form>
         )}
+
         <button
           type="button"
           onClick={onUnlockDemo}

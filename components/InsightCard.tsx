@@ -1,9 +1,5 @@
-import type { Insight, Sentiment } from "@/lib/insights";
+import type { PublicInsight, Sentiment } from "@/lib/insights";
 import { Disclaimer } from "./Disclaimer";
-
-// Replace with your partner broker's tracked affiliate URL.
-const AFFILIATE_URL =
-  process.env.NEXT_PUBLIC_BROKER_AFFILIATE_URL ?? "https://example.com/partner-broker";
 
 const sentimentStyle: Record<Sentiment, string> = {
   Bullish: "text-emerald-400 border-emerald-400/30 bg-emerald-400/10",
@@ -38,13 +34,49 @@ function ConfidenceMeter({ value }: { value: number }) {
   );
 }
 
-export function InsightCard({
-  insight,
-  locked = false,
-}: {
-  insight: Insight;
-  locked?: boolean;
-}) {
+function Points({ title, points, tone }: { title: string; points: string[]; tone: "bull" | "bear" }) {
+  const color = tone === "bull" ? "text-emerald-400" : "text-rose-400";
+  return (
+    <section>
+      <h4 className={`text-xs font-semibold uppercase tracking-[0.2em] ${color}`}>{title}</h4>
+      <ul className="mt-2 space-y-1.5 text-sm text-foreground/85">
+        {points.map((point) => (
+          <li key={point} className="flex gap-2">
+            <span className={color}>{tone === "bull" ? "▲" : "▼"}</span>
+            {point}
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
+/**
+ * Stand-in for withheld analysis. Pure decoration: none of these shapes are
+ * derived from real data, so blurring them reveals nothing.
+ */
+function LockedPlaceholder() {
+  return (
+    <div className="mt-6 select-none blur-md" aria-hidden="true">
+      <div className="h-8 w-full rounded bg-white/10" />
+      <div className="mt-6 grid gap-4 sm:grid-cols-2">
+        {[0, 1].map((col) => (
+          <div key={col} className="space-y-2">
+            <div className="h-3 w-1/3 rounded bg-white/10" />
+            <div className="h-3 w-full rounded bg-white/10" />
+            <div className="h-3 w-5/6 rounded bg-white/10" />
+            <div className="h-3 w-2/3 rounded bg-white/10" />
+          </div>
+        ))}
+      </div>
+      <div className="mt-6 h-11 w-full rounded-lg bg-white/10" />
+    </div>
+  );
+}
+
+export function InsightCard({ insight }: { insight: PublicInsight }) {
+  const { confidence, bull, bear, affiliateUrl } = insight;
+
   return (
     <article className="rounded-2xl border border-gold/20 bg-panel p-6 shadow-[0_0_0_1px_rgba(0,0,0,0.4)]">
       <header className="flex items-start justify-between gap-4">
@@ -61,57 +93,36 @@ export function InsightCard({
         </span>
       </header>
 
-      {/* High-value analytics: blurred and inert for Free members. */}
-      <div
-        className={locked ? "pointer-events-none select-none blur-md" : undefined}
-        aria-hidden={locked}
-      >
-        <div className="mt-6">
-          <ConfidenceMeter value={insight.confidence} />
-        </div>
+      {insight.locked ? (
+        <LockedPlaceholder />
+      ) : (
+        <>
+          {confidence !== undefined && (
+            <div className="mt-6">
+              <ConfidenceMeter value={confidence} />
+            </div>
+          )}
 
-        <div className="mt-6 grid gap-4 sm:grid-cols-2">
-          <section>
-            <h4 className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-400">
-              Bull Case
-            </h4>
-            <ul className="mt-2 space-y-1.5 text-sm text-foreground/85">
-              {insight.bull.map((point) => (
-                <li key={point} className="flex gap-2">
-                  <span className="text-emerald-400">▲</span>
-                  {point}
-                </li>
-              ))}
-            </ul>
-          </section>
-          <section>
-            <h4 className="text-xs font-semibold uppercase tracking-[0.2em] text-rose-400">
-              Bear Case
-            </h4>
-            <ul className="mt-2 space-y-1.5 text-sm text-foreground/85">
-              {insight.bear.map((point) => (
-                <li key={point} className="flex gap-2">
-                  <span className="text-rose-400">▼</span>
-                  {point}
-                </li>
-              ))}
-            </ul>
-          </section>
-        </div>
+          <div className="mt-6 grid gap-4 sm:grid-cols-2">
+            {bull && <Points title="Bull Case" points={bull} tone="bull" />}
+            {bear && <Points title="Bear Case" points={bear} tone="bear" />}
+          </div>
 
-        <footer className="mt-6">
-          <a
-            href={AFFILIATE_URL}
-            target="_blank"
-            rel="sponsored noopener noreferrer"
-            tabIndex={locked ? -1 : undefined}
-            className="block w-full rounded-lg bg-gradient-to-b from-gold to-gold-soft px-5 py-3 text-center text-sm font-semibold uppercase tracking-[0.18em] text-background transition hover:brightness-110"
-          >
-            Invest via Partner Broker
-          </a>
-          <Disclaimer />
-        </footer>
-      </div>
+          <footer className="mt-6">
+            {affiliateUrl && (
+              <a
+                href={affiliateUrl}
+                target="_blank"
+                rel="sponsored noopener noreferrer"
+                className="block w-full rounded-lg bg-gradient-to-b from-gold to-gold-soft px-5 py-3 text-center text-sm font-semibold uppercase tracking-[0.18em] text-background transition hover:brightness-110"
+              >
+                Invest via Partner Broker
+              </a>
+            )}
+            <Disclaimer />
+          </footer>
+        </>
+      )}
     </article>
   );
 }

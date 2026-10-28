@@ -1,18 +1,33 @@
 export type Sentiment = "Bullish" | "Neutral" | "Bearish";
+export type Plan = "free" | "premium";
 
-export interface Insight {
-  id: string;
-  asset: string;
-  ticker: string;
-  sentiment: Sentiment;
+interface PremiumFields {
   /** AI buy/sell confidence, 0 (strong sell) to 100 (strong buy). */
   confidence: number;
   bull: string[];
   bear: string[];
 }
 
+/** Full record. Server-only: never send this shape to a Free session. */
+export interface Insight extends PremiumFields {
+  id: string;
+  asset: string;
+  ticker: string;
+  sentiment: Sentiment;
+}
+
+/** What the API returns. Premium fields are absent (not null) when locked. */
+export interface PublicInsight extends Partial<PremiumFields> {
+  id: string;
+  asset: string;
+  ticker: string;
+  sentiment: Sentiment;
+  locked: boolean;
+  affiliateUrl?: string;
+}
+
 // Illustrative sample data only. Replace with a live model/data pipeline.
-export const insights: Insight[] = [
+const insights: Insight[] = [
   {
     id: "nvda",
     asset: "NVIDIA Corporation",
@@ -76,3 +91,21 @@ export const insights: Insight[] = [
     ],
   },
 ];
+
+/** The first insight is a free teaser; the rest are premium-only. */
+const FREE_TEASER_COUNT = 1;
+
+/**
+ * Shapes insights for a plan. For Free sessions the premium fields
+ * (confidence, bull/bear, affiliate link) are removed from the object entirely,
+ * so they never reach the client.
+ */
+export function getInsightsForPlan(plan: Plan, affiliateUrl: string): PublicInsight[] {
+  return insights.map((insight, index) => {
+    const { id, asset, ticker, sentiment, ...premium } = insight;
+    const unlocked = plan === "premium" || index < FREE_TEASER_COUNT;
+    return unlocked
+      ? { id, asset, ticker, sentiment, locked: false, affiliateUrl, ...premium }
+      : { id, asset, ticker, sentiment, locked: true };
+  });
+}

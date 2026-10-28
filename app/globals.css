@@ -38,4 +38,7 @@ body {
 .font-heading {
   font-family: var(--font-cormorant), Georgia, serif;
   letter-spacing: 0.14em;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  font-kerning: normal;
 }
