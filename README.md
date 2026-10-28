@@ -33,6 +33,8 @@ components/
   LockOverlay.tsx      glassmorphism lock screen with waitlist form
   Disclaimer.tsx       legal disclaimer shown under every CTA
 lib/insights.ts        data + getInsightsForPlan() server-side filter
+lib/tiers.ts           three USD tiers, Stripe price env names, formatUsd()
+lib/i18n/              dictionaries and locale helpers
 ```
 
 ## Secure data layer
@@ -71,10 +73,34 @@ consent via a checkbox linking to it. Set `NEXT_PUBLIC_PRIVACY_EMAIL` to the add
 that handles access and deletion requests. Have counsel review the policy text and
 name the legal controller entity once it is established.
 
+## Pricing tiers (USD)
+
+All billing is in US dollars. Tiers are defined in `lib/tiers.ts`:
+
+| Tier | Price | Notes |
+| --- | --- | --- |
+| Insider | $99/mo | Standard AI insights. Early-access members lock this price in permanently. |
+| Alpha Pro | $149/mo | Adds real-time alerts and community signals. |
+| Prestige | $249/mo | Limited capacity; direct portfolio sync. |
+
+Each tier carries a `stripePriceEnv` naming the env var that will hold its Stripe
+Price ID, so the Poland entity can create the prices in its own Stripe account with
+no code change. Payments are not enabled yet; a checkout flow comes after the
+business setup is complete. Tier features described as "real-time", "community" or
+"portfolio sync" are planned, not yet built.
+
+## Internationalization
+
+English (US) is the default and only locale today. All dashboard and waitlist
+strings live in `lib/i18n/en-US.ts`; components read them through `useDictionary()`
+(`components/I18nProvider.tsx`). To add a language, create `lib/i18n/<locale>.ts`
+exporting a `Dictionary` (a missing key fails the build), then register it in
+`lib/i18n/index.ts`. Not yet localized: the `/privacy` page body, page metadata and
+OG image text.
+
 ## Monetization (planned)
 
-1. **Subscription:** one $99/month tier. Payments are deferred; a checkout flow will
-   be added after the business setup is complete.
+1. **Subscriptions:** the three USD tiers above, via Stripe once enabled.
 2. **Affiliate:** the "Invest via Partner Broker" button uses
    `NEXT_PUBLIC_BROKER_AFFILIATE_URL` with `rel="sponsored"`. Disclose affiliate
    relationships as your jurisdiction requires.
@@ -105,3 +131,4 @@ Cloudflare dashboard before the first deploy.
 | `SUPABASE_URL` | Supabase project URL (server only) |
 | `SUPABASE_SERVICE_ROLE_KEY` | Supabase service role key (server only) |
 | `NEXT_PUBLIC_PRIVACY_EMAIL` | Contact for privacy requests |
+| `STRIPE_PRICE_ID_INSIDER` / `_ALPHA_PRO` / `_PRESTIGE` | Stripe Price IDs (future) |

@@ -1,5 +1,9 @@
+"use client";
+
 import type { PublicInsight, Sentiment } from "@/lib/insights";
+import { format } from "@/lib/i18n";
 import { Disclaimer } from "./Disclaimer";
+import { useDictionary } from "./I18nProvider";
 
 const sentimentStyle: Record<Sentiment, string> = {
   Bullish: "text-emerald-400 border-emerald-400/30 bg-emerald-400/10",
@@ -8,12 +12,14 @@ const sentimentStyle: Record<Sentiment, string> = {
 };
 
 function ConfidenceMeter({ value }: { value: number }) {
-  const label = value >= 60 ? "Buy" : value <= 40 ? "Sell" : "Hold";
+  const { dict } = useDictionary();
+  const signal =
+    value >= 60 ? dict.insight.signal.buy : value <= 40 ? dict.insight.signal.sell : dict.insight.signal.hold;
   return (
     <div>
       <div className="flex items-baseline justify-between">
         <span className="text-[11px] uppercase tracking-[0.2em] text-muted">
-          AI Confidence · {label}
+          {format(dict.insight.confidence, { signal })}
         </span>
         <span className="font-heading text-3xl text-gold">{value}</span>
       </div>
@@ -23,7 +29,7 @@ function ConfidenceMeter({ value }: { value: number }) {
         aria-valuenow={value}
         aria-valuemin={0}
         aria-valuemax={100}
-        aria-label="AI buy/sell confidence score"
+        aria-label={dict.insight.confidenceAria}
       >
         <div
           className="h-full rounded-full bg-gradient-to-r from-bronze to-gold"
@@ -75,6 +81,7 @@ function LockedPlaceholder() {
 }
 
 export function InsightCard({ insight }: { insight: PublicInsight }) {
+  const { dict } = useDictionary();
   const { confidence, bull, bear, affiliateUrl } = insight;
 
   return (
@@ -89,7 +96,7 @@ export function InsightCard({ insight }: { insight: PublicInsight }) {
         <span
           className={`rounded-full border px-3 py-1 text-xs font-medium ${sentimentStyle[insight.sentiment]}`}
         >
-          {insight.sentiment}
+          {dict.insight.sentiment[insight.sentiment]}
         </span>
       </header>
 
@@ -104,8 +111,8 @@ export function InsightCard({ insight }: { insight: PublicInsight }) {
           )}
 
           <div className="mt-6 grid gap-4 sm:grid-cols-2">
-            {bull && <Points title="Bull Case" points={bull} tone="bull" />}
-            {bear && <Points title="Bear Case" points={bear} tone="bear" />}
+            {bull && <Points title={dict.insight.bullCase} points={bull} tone="bull" />}
+            {bear && <Points title={dict.insight.bearCase} points={bear} tone="bear" />}
           </div>
 
           <footer className="mt-6">
@@ -116,7 +123,7 @@ export function InsightCard({ insight }: { insight: PublicInsight }) {
                 rel="sponsored noopener noreferrer"
                 className="block w-full rounded-lg bg-gradient-to-b from-gold to-gold-soft px-5 py-3 text-center text-sm font-semibold uppercase tracking-[0.18em] text-background transition hover:brightness-110"
               >
-                Invest via Partner Broker
+                {dict.insight.brokerCta}
               </a>
             )}
             <Disclaimer />

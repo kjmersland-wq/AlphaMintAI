@@ -1,6 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import { Cormorant_Garamond, Inter } from "next/font/google";
 import "./globals.css";
+import { I18nProvider } from "@/components/I18nProvider";
+import { defaultLocale, getDictionary } from "@/lib/i18n";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -41,10 +43,14 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
-      lang="en"
+      lang={defaultLocale}
       className={`${inter.variable} ${cormorant.variable} dark h-full antialiased`}
     >
-      <body className="min-h-full bg-background text-foreground">{children}</body>
+      <body className="min-h-full bg-background text-foreground">
+        <I18nProvider locale={defaultLocale} dictionary={getDictionary(defaultLocale)}>
+          {children}
+        </I18nProvider>
+      </body>
     </html>
   );
 }
